@@ -73,7 +73,7 @@ class RequestPokemonApi:
 
     def _id_by_url(self, url: str) -> int:
         '''
-        Méetodo privado que retorna id de URL de PokeAPI (de endpoint /pokemon)
+        Método privado que retorna id de URL de PokeAPI (de endpoint /pokemon/id)
         url: URL a tratar <str>
         '''
         partes: list[str] = url.split('/')
@@ -143,8 +143,8 @@ class RequestPokemonApi:
     
     def get_pokemon_interbreed(self, pokemon: str) -> set:
         '''
-        Método que permite, para un pokemon dado, conocer todos los pokemons con los cuales 
-        podría cruzarse
+        Método que permite, para un pokemon dado, conocer todos las especies de pokemon 
+        con las cuales podría cruzarse
         pokemon: nombre del pokemon
         '''
         
@@ -173,29 +173,13 @@ class RequestPokemonApi:
                     for url_egg_group in urls_egg_groups:
 
                         #pokemon_species para cada egg_group
-
                         rp = self._request_url_api(url_egg_group)
                         if rp:
                             pk_esp: list[dict] = rp.json()['pokemon_species']
-                            #Se extren las URL de los pokemon_spieces asociados a cada
+                            #Se extren los nombres de los pokemon_spieces asociados a cada
                             #egg_group de interés
-                            urls_pokemon_species: list[str] = [data['url'] for data in pk_esp]
-
-                            for url_pokemon_species in urls_pokemon_species:
-
-                                #extracción de pokemons para cada pokemon_species
-
-                                rp = self._request_url_api(url_pokemon_species)
-                                if rp:
-
-                                    #extraccion de pokemons por cada pokemon_spieces
-                                    #y se genera arreglo para contenerlos
-                                    pokemons:list[dict] = rp.json()['varieties']
-                                    pk_names_pr = {data['pokemon']['name'] for data in pokemons}
-                                    pk_names = pk_names.union(pk_names_pr)
-
-                                else:
-                                    print(f'ERROR: revisar logs')
+                            pokemon_species = {data['name'] for data in pk_esp}
+                            pk_names = pk_names.union(pokemon_species)
                         else:
                             print(f'ERROR: revisar logs')
 
@@ -249,7 +233,21 @@ class RequestPokemonApi:
 
                         rp = self._request_url_api(url_pokemon)
                         if rp:
-                            weight[i] = int(rp.json()['weight'])                         
+                            try:
+                                #Conversion a entero del peso del pokemon
+                                weight[i] = int(rp.json()['weight'])
+                                
+                            except ValueError as e:
+                                log = Log()
+                                log.log_write(type='ValueError', msj=e.args[0])
+                                print(f'ERROR: revisar logs')
+                                weight[i] = 0  
+
+                            except Exception as e:
+                                log = Log()
+                                log.log_write(type=e.__class__, msj=e.args[0])
+                                print(f'ERROR: revisar logs')
+                                weight[i] = 0                       
                         else:
                             print(f'ERROR: revisar logs')
 
