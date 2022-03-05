@@ -26,7 +26,11 @@ class Log:
     '''
     LOG: str = 'log/log_file'
     def __init__(self):
-
+        '''
+        Constructor. Verifica que la carpeta contenedora del Log (self.Log)
+        esté presente. Si no es así la crea y apunta al log por medio de
+        self.log_path
+        '''
         folder_log_path: str = path.join(getcwd(), path.split(self.LOG)[0])  
         if not path.exists(folder_log_path):
             mkdir(folder_log_path)
@@ -34,6 +38,11 @@ class Log:
         self.log_path = path.join(getcwd(), self.LOG)
 
     def log_write(self, type: str, msj: str):
+        '''
+        Método encargado de escribir en el log de eventos
+        type: Tipo de evento o error
+        msj: Cuerpo del mensaje a escribir
+        '''
         with open(self.log_path, 'a') as f:
             date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             f.write(f'ERROR\nFecha: {date_time}, Tipo: {type}, Msj: {msj}\n')
