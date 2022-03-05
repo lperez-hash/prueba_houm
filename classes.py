@@ -59,14 +59,13 @@ class BadGateway(Exception):
 class RequestPokemonApi:
     '''
     Clase para ejecutar operaciones de consumo sobre PokeApi.
-    Expone 3 funciones.
     '''
 
     #URL BASE Y SEGMENTOS A USAR
     DOM = 'https://pokeapi.co/api/v2/'
     PK = 'pokemon/'
     PK_ESP = 'pokemon-species/'
-    EGG_GRP = 'egg-group'
+    EGG_GRP = 'egg-group/'
     TP = 'type/'
 
     def __init__(self):
@@ -74,7 +73,7 @@ class RequestPokemonApi:
 
     def _id_by_url(self, url: str) -> int:
         '''
-        Función privada que retorna id de URL de PokeAPI (de endpoint /pokemon)
+        Méetodo privado que retorna id de URL de PokeAPI (de endpoint /pokemon)
         url: URL a tratar <str>
         '''
         partes: list[str] = url.split('/')
@@ -86,7 +85,7 @@ class RequestPokemonApi:
 
     def _request_url_api(self, url: str) -> Response:
         '''
-        Funcion privada encargada de hacer request a URLs de PokeAPI
+        Metodo privado encargada de hacer request a URLs de PokeAPI
         url: str: URL a consultar
         Salida: Response. En caso de presentarse exepciones en el llamado del endpoint, se
         retornará None
