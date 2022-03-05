@@ -28,6 +28,7 @@ def regex_pokemons() -> int:
 def pokemon_interbreed_raichu() -> int:
     '''
     Función que da solución al punto 2 de la Prueba
+    Retorna int que especifica número de especies con las que raichu podría cruzarse
     '''
     pokemon_name = 'raichu'
     req = RequestPokemonApi()
@@ -39,7 +40,10 @@ def pokemon_interbreed_raichu() -> int:
         return None
 
 def max_min_fighting() -> list:
-
+    '''
+    Función que da solución al punto 3 de la Prueba
+    Retorna lista con pesos minimo y máximo de los pokemons de tipo Fighting [Max, Min]
+    '''
     req = RequestPokemonApi()
     weights: list[int] = req.pokemon_type_weights('fighting')
 
