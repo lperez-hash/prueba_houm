@@ -1,4 +1,3 @@
-from token import TYPE_COMMENT
 import requests
 from requests import Response
 from datetime import datetime
