@@ -49,14 +49,13 @@ def max_min_fighting() -> list:
         return None
 
 if __name__ == '__main__':
-  
+    
 
-
-    print('\nPrueba Punto 1')
+    """ print('\nPrueba Punto 1')
     
     result = regex_pokemons()
 
-    print(result)
+    print(result) """
 
     print('\nPrueba Punto 2')
     
@@ -64,10 +63,10 @@ if __name__ == '__main__':
 
     print(result)
 
-    print('\nPrueba Punto 3')
+    """ print('\nPrueba Punto 3')
     
     result = max_min_fighting()
 
-    print(result)
+    print(result)  """
 
 
