@@ -1,12 +1,60 @@
+from token import TYPE_COMMENT
 import requests
 from requests import Response
+from datetime import datetime
+from os import getcwd, path, mkdir
+
+#definicíon de decorador Singleton
+
+def singleton(cls):
+    '''
+    Funcion decoradora para patrón singleton
+    '''
+    instances = dict()
+    def wrp(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        
+        return instances[cls]
+
+    return wrp
+
+@singleton
+class Log:
+    '''
+    Clase encargada de escribir en log de errores
+    LOG: Path del log de errores, el cual es relativo a la ubicación actual 
+    '''
+    LOG: str = 'log/log_file'
+    def __init__(self):
+
+        folder_log_path: str = path.join(getcwd(), path.split(self.LOG)[0])  
+        if not path.exists(folder_log_path):
+            mkdir(folder_log_path)
+         
+        self.log_path = path.join(getcwd(), self.LOG)
+
+    def log_write(self, type: str, msj: str):
+        with open(self.log_path, 'a') as f:
+            date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            f.write(f'ERROR\nFecha: {date_time}, Tipo: {type}, Msj: {msj}\n')
 
 
 class RecursoNoEncontrado(Exception):
-    pass
+    '''
+    Se levanta esta excepción cuando se presenta HTTP status: 404
+    '''
+    def __init__(self, recurso: str):
+        message = f'El recurso {recurso} a respondido con HTTP status 404'
+        super().__init__(message)
 
 class BadGateway(Exception):
-    pass
+    '''
+    Se levanta esta excepción cuando se presenta HTTP status: 502
+    '''
+    def __init__(self, recurso: str):
+        message = f'El recurso {recurso} a respondido con HTTP status 502'
+        super().__init__(message)
 
 class RequestPokemonApi:
     '''
@@ -47,20 +95,23 @@ class RequestPokemonApi:
             r:Response = requests.get(url)
 
             if r.status_code == 404:
-                raise RecursoNoEncontrado
+                raise RecursoNoEncontrado(url)
             elif r.status_code == 502:
-                raise BadGateway
+                raise BadGateway(url)
 
             return r
 
         except RecursoNoEncontrado:
-            print('El recurso no está disponible')
+            log = Log()
+            log.log_write(type='HTTP Error', msj=f'HTTP status 404: {url}')
             return None
         except BadGateway:
-            print('HTTP 502 al tratar de acceder al recurso')
+            log = Log()
+            log.log_write(type='HTTP Error', msj=f'HTTP status 502: {url}')
             return None
         except Exception as e:
-            print(f'ERR: {e.__class__}')
+            log = Log()
+            log.log_write(type=e.__class__, msj=e.args)
             return None
             
     
@@ -85,8 +136,10 @@ class RequestPokemonApi:
                 return [pok['name'] for pok in data]
 
             else:
+                print(f'ERROR: revisar logs')
                 return None
         else:
+            print(f'ERROR: revisar logs')
             return None
     
     def get_pokemon_interbreed(self, pokemon: str) -> set:
@@ -122,7 +175,6 @@ class RequestPokemonApi:
 
                         #pokemon_species para cada egg_group
 
-                        print(f'## Egg_group: {url_egg_group}\n')
                         rp = self._request_url_api(url_egg_group)
                         if rp:
                             pk_esp: list[dict] = rp.json()['pokemon_species']
@@ -134,8 +186,6 @@ class RequestPokemonApi:
 
                                 #extracción de pokemons para cada pokemon_species
 
-                                print(f'## pokemon_species: {url_pokemon_species}\n')
-
                                 rp = self._request_url_api(url_pokemon_species)
                                 if rp:
 
@@ -146,14 +196,14 @@ class RequestPokemonApi:
                                     pk_names = pk_names.union(pk_names_pr)
 
                                 else:
-                                    print(f'ERROR ACCESO url_pokemon_species: {url_pokemon_species}')
+                                    print(f'ERROR: revisar logs')
                         else:
-                            print(f'ERROR ACCESO url_egg_group: {url_egg_group}') 
+                            print(f'ERROR: revisar logs')
 
                     return pk_names
 
                 else:
-                    print(f'ERROR ACCESO url_species: {url_species}')
+                    print(f'ERROR: revisar logs')
                     return None
         
             else:
@@ -202,17 +252,17 @@ class RequestPokemonApi:
                         if rp:
                             weight[i] = int(rp.json()['weight'])                         
                         else:
-                            print(f'Error al consultar link de pokemon {url_pokemon}')
+                            print(f'ERROR: revisar logs')
 
                     return weight
 
                 else:
-                    print('Error al consultar URL de tipo de pokemon')
+                    print(f'ERROR: revisar logs')
                     return None
             else:
-                print('No se encontro URL para el tipo de pokemon solicitado')
+                print(f'ERROR: revisar logs')
                 return None
         else:
-            print('Error al consultar URL de tipos de pokemon')
+            print(f'ERROR: revisar logs')
             return None
         
