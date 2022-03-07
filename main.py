@@ -1,7 +1,9 @@
-from classes import RequestPokemonApi
-
+'''
+Modulo de funciones principales que dan solución a la prueba.
+en if __name__ se dá ejemplo de uso de las funciones.
+'''
 from pandas import Series
-
+from classes import RequestPokemonApi
 
 def regex_pokemons() -> int:
     """
@@ -10,7 +12,7 @@ def regex_pokemons() -> int:
     """
     req = RequestPokemonApi()
     data = req.get_pokemon_names()
-    
+
     if data:
         data_serie: Series = Series(data=data, name='names')
 
@@ -45,32 +47,24 @@ def max_min_fighting() -> list:
     Retorna lista con pesos minimo y máximo de los pokemons de tipo Fighting [Max, Min]
     '''
     req = RequestPokemonApi()
-    weights: list[int] = req.pokemon_type_weights('fighting')
+    weights: list = req.pokemon_type_weights('fighting')
 
     if weights:
         return [max(weights), min(weights)]
     else:
         return None
 
-if __name__ == '__main__':
-    
-
-    print('\nPrueba Punto 1')
-    
+if __name__ == '__main__':  
+    #Ejecucion función punto1
+    print('\nPrueba Punto 1')  
     result = regex_pokemons()
-
     print(result)
-
+    #Ejecucion función punto2
     print('\nPrueba Punto 2')
-    
     result = pokemon_interbreed_raichu()
-
     print(result)
-
+    #Ejecucion función punto3
     print('\nPrueba Punto 3')
-    
     result = max_min_fighting()
-
-    print(result) 
-
-
+    print(result)
+    

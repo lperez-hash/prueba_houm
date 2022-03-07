@@ -1,7 +1,21 @@
-import requests
-from requests import Response
-from datetime import datetime
+'''
+Módulo que contiene clases usadas en main.py.
+Clases de manejo de excepciones:
+    RecursoNoEncontrado
+    BadGateway
+Clase para consumo de PokeAPI:
+    RequestPokemonApi
+Clase para escritura de Log de errores:
+    Log
+
+También contiene función asociada a decorador @singleton
+
+'''
+from typing import List
 from os import getcwd, path, mkdir
+from datetime import datetime
+from requests import Response
+import requests
 
 #definicíon de decorador Singleton
 
@@ -13,7 +27,6 @@ def singleton(cls):
     def wrp(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
-        
         return instances[cls]
 
     return wrp
@@ -22,7 +35,7 @@ def singleton(cls):
 class Log:
     '''
     Clase encargada de escribir en log de errores
-    LOG: Path del log de errores, el cual es relativo a la ubicación actual 
+    LOG: Path del log de errores, el cual es relativo a la ubicación actual
     '''
     LOG: str = 'log/log_file'
     def __init__(self):
@@ -31,21 +44,21 @@ class Log:
         esté presente. Si no es así la crea y apunta al log por medio de
         self.log_path
         '''
-        folder_log_path: str = path.join(getcwd(), path.split(self.LOG)[0])  
+        folder_log_path: str = path.join(getcwd(), path.split(self.LOG)[0])
         if not path.exists(folder_log_path):
             mkdir(folder_log_path)
-         
+        
         self.log_path = path.join(getcwd(), self.LOG)
 
-    def log_write(self, type: str, msj: str):
+    def log_write(self, log_type: str, msj: str):
         '''
         Método encargado de escribir en el log de eventos
         type: Tipo de evento o error
         msj: Cuerpo del mensaje a escribir
         '''
-        with open(self.log_path, 'a') as f:
+        with open(file=self.log_path, mode='a', encoding='utf-8') as log_file:
             date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            f.write(f'ERROR\nFecha: {date_time}, Tipo: {type}, Msj: {msj}\n')
+            log_file.write(f'ERROR\nFecha: {date_time}, Tipo: {log_type}, Msj: {msj}\n')
 
 
 class RecursoNoEncontrado(Exception):
@@ -79,19 +92,20 @@ class RequestPokemonApi:
     def __init__(self):
         pass
 
-    def _id_by_url(self, url: str) -> int:
+    @staticmethod
+    def _id_by_url(url: str) -> int:
         '''
         Método privado que retorna id de URL de PokeAPI (de endpoint /pokemon/id)
         url: URL a tratar <str>
         '''
-        partes: list[str] = url.split('/')
+        partes: List[str] = url.split('/')
         if partes[-1] == '':
             return int(partes[-2])
         else:
             return int(partes[-1])
 
-
-    def _request_url_api(self, url: str) -> Response:
+    @staticmethod
+    def _request_url_api(url: str) -> Response:
         '''
         Metodo privado encargada de hacer request a URLs de PokeAPI
         url: str: URL a consultar
@@ -99,29 +113,28 @@ class RequestPokemonApi:
         retornará None
         '''
         try:
-            r:Response = requests.get(url)
+            resp:Response = requests.get(url)
 
-            if r.status_code == 404:
+            if resp.status_code == 404:
                 raise RecursoNoEncontrado(url)
-            elif r.status_code == 502:
+            elif resp.status_code == 502:
                 raise BadGateway(url)
 
-            return r
+            return resp
 
         except RecursoNoEncontrado:
             log = Log()
-            log.log_write(type='HTTP Error', msj=f'HTTP status 404: {url}')
+            log.log_write(log_type='HTTP Error', msj=f'HTTP status 404: {url}')
             return None
         except BadGateway:
             log = Log()
-            log.log_write(type='HTTP Error', msj=f'HTTP status 502: {url}')
+            log.log_write(log_type='HTTP Error', msj=f'HTTP status 502: {url}')
             return None
-        except Exception as e:
+        except Exception as excep:
             log = Log()
-            log.log_write(type=e.__class__, msj=e.args)
+            log.log_write(log_type=excep.__class__, msj=excep.args)
             return None
-            
-    
+
     def get_pokemon_names(self) -> list:
         '''
         Método usado para traer desde PokeAPI los nombres de todos los pokemon registrados
@@ -129,80 +142,74 @@ class RequestPokemonApi:
 
         url = self.DOM + self.PK
         #Se inspecciona cuandos datos disponibles hay
-        rp = self._request_url_api(url + '?limit=1')
-        if rp:
-            cantidad: int = rp.json()['count']
+        resp = self._request_url_api(url + '?limit=1')
+        if resp:
+            cantidad: int = resp.json()['count']
 
             #Se agrega parametro query limit al request
-            rp = self._request_url_api(url + f'?limit={cantidad}')
-            if rp:
+            resp = self._request_url_api(url + f'?limit={cantidad}')
+            if resp:
 
-                data:list[dict] = rp.json()['results']
+                data:List[dict] = resp.json()['results']
 
                 # se retorna lista con los nombres de los pokemons
                 return [pok['name'] for pok in data]
 
             else:
-                print(f'ERROR: revisar logs')
+                print('ERROR: revisar logs')
                 return None
         else:
-            print(f'ERROR: revisar logs')
+            print('ERROR: revisar logs')
             return None
-    
+
     def get_pokemon_interbreed(self, pokemon: str) -> set:
         '''
         Método que permite, para un pokemon dado, conocer todos las especies de pokemon 
         con las cuales podría cruzarse
         pokemon: nombre del pokemon
         '''
-        
+    
         if isinstance(pokemon,str):
-            
             #extracción de la especie de pokemon
             url = self.DOM + self.PK + pokemon
 
-            rp = self._request_url_api(url)
-            if rp:
-                
-                url_species: str = rp.json()['species']['url']
+            resp = self._request_url_api(url)
+            if resp:       
+                url_species: str = resp.json()['species']['url']
 
                 #extracción de los egg-group para la especie de pokemon
-                rp = self._request_url_api(url_species)
+                resp = self._request_url_api(url_species)
 
-                if rp:
-                    egg_groups: list[dict] = rp.json()['egg_groups']   
-
+                if resp:
+                    egg_groups: List[dict] = resp.json()['egg_groups']   
                     #Se extraen URLs de los egg_groups de interés     
-                    urls_egg_groups: list[str] = [data['url'] for data in egg_groups]
-                    
+                    urls_egg_groups: List[str] = [data['url'] for data in egg_groups]                 
                     pk_names = set()
-
                     del egg_groups
                     for url_egg_group in urls_egg_groups:
 
                         #pokemon_species para cada egg_group
-                        rp = self._request_url_api(url_egg_group)
-                        if rp:
-                            pk_esp: list[dict] = rp.json()['pokemon_species']
+                        resp = self._request_url_api(url_egg_group)
+                        if resp:
+                            pk_esp: List[dict] = resp.json()['pokemon_species']
                             #Se extren los nombres de los pokemon_spieces asociados a cada
                             #egg_group de interés
                             pokemon_species = {data['name'] for data in pk_esp}
                             pk_names = pk_names.union(pokemon_species)
                         else:
-                            print(f'ERROR: revisar logs')
+                            print('ERROR: revisar logs')
 
                     return pk_names
 
                 else:
-                    print(f'ERROR: revisar logs')
-                    return None
-        
+                    print('ERROR: revisar logs')
+                    return None   
             else:
                 return None
         else:
             return None
     
-    def pokemon_type_weights(self, type: str, limit_lt_e: int = 151) -> list:
+    def pokemon_type_weights(self, type_pk: str, limit_lt_e: int = 151) -> list:
 
         '''
         Método que retorna los pesos de los pokemones de cierto tipo
@@ -213,61 +220,61 @@ class RequestPokemonApi:
         
         url = self.DOM + self.TP
         #se consulta URL general que retorna los tipos de pokemons
-        rp = self._request_url_api(url)
+        resp = self._request_url_api(url)
 
-        if rp:
+        if resp:
             #Se busca URL válida para el tipo de pokemon indicado
             url_type = ''
-            types: list[dict] = rp.json()['results']
+            types: List[dict] = resp.json()['results']
 
             for p_type in types:
-                if p_type['name'] == type:
+                if p_type['name'] == type_pk:
                     url_type = p_type['url']
                     break
             if url_type != '':
                 #Se consulta el endpoint asociado al tipo de pokemon para extraer los
                 #Pokemons pertenecientes a esa categoria
 
-                rp = self._request_url_api(url_type)
-                if rp:
+                resp = self._request_url_api(url_type)
+                if resp:
 
                     #se verifican ids para condición id<=limit_gt_e
-                    pokemons: list[str] = [pokemon['pokemon']['url'] for pokemon in rp.json()['pokemon'] if self._id_by_url(pokemon['pokemon']['url']) <= limit_lt_e]
+                    pokemons: List[str] = [pokemon['pokemon']['url'] for pokemon in resp.json()['pokemon'] if self._id_by_url(pokemon['pokemon']['url']) <= limit_lt_e]
                     weight = [0 for i in range(0,len(pokemons))]
                     
                     for i, url_pokemon in enumerate(pokemons, 0):
                         
                         # se realiza consulta por cada pokemon valido y extarcción del peso
 
-                        rp = self._request_url_api(url_pokemon)
-                        if rp:
+                        resp = self._request_url_api(url_pokemon)
+                        if resp:
                             try:
                                 #Conversion a entero del peso del pokemon
-                                weight[i] = int(rp.json()['weight'])
+                                weight[i] = int(resp.json()['weight'])
                                 
-                            except ValueError as e:
+                            except ValueError as excep:
                                 log = Log()
-                                log.log_write(type='ValueError', msj=e.args[0])
-                                print(f'ERROR: revisar logs')
+                                log.log_write(log_type='ValueError', msj=excep.args[0])
+                                print('ERROR: revisar logs')
                                 weight[i] = 0  
 
-                            except Exception as e:
+                            except Exception as excep:
                                 log = Log()
-                                log.log_write(type=e.__class__, msj=e.args[0])
-                                print(f'ERROR: revisar logs')
+                                log.log_write(log_type=excep.__class__, msj=excep.args[0])
+                                print('ERROR: revisar logs')
                                 weight[i] = 0                       
                         else:
-                            print(f'ERROR: revisar logs')
+                            print('ERROR: revisar logs')
 
                     return weight
 
                 else:
-                    print(f'ERROR: revisar logs')
+                    print('ERROR: revisar logs')
                     return None
             else:
-                print(f'ERROR: revisar logs')
+                print('ERROR: revisar logs')
                 return None
         else:
-            print(f'ERROR: revisar logs')
+            print('ERROR: revisar logs')
             return None
-        
+
